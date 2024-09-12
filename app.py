@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, request, redirect, url_for, session, flash, render_template_string
 import sqlite3
 from datetime import datetime
 import os
@@ -48,7 +48,13 @@ create_tables()
 def index():
     if 'username' not in session:
         return redirect(url_for('login'))
-    return render('index.html', username=session['username'])
+    return render_template_string('''
+    <h1>Welcome, {{ username }}!</h1>
+    <a href="{{ url_for('add_expense') }}">Add Expense</a> | 
+    <a href="{{ url_for('view_expenses') }}">View Expenses</a> | 
+    <a href="{{ url_for('expense_chart') }}">View Expense Chart</a> | 
+    <a href="{{ url_for('logout') }}">Logout</a>
+    ''')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -68,7 +74,15 @@ def register():
         finally:
             conn.close()
 
-    return render_template('register.html')
+    return render_template_string('''
+    <h1>Register</h1>
+    <form method="POST">
+        Username: <input type="text" name="username" required><br>
+        Password: <input type="password" name="password" required><br>
+        <input type="submit" value="Register">
+    </form>
+    <a href="{{ url_for('login') }}">Login</a>
+    ''')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -87,7 +101,15 @@ def login():
         else:
             flash('Invalid credentials. Please try again.', 'danger')
 
-    return render_template('login.html')
+    return render_template_string('''
+    <h1>Login</h1>
+    <form method="POST">
+        Username: <input type="text" name="username" required><br>
+        Password: <input type="password" name="password" required><br>
+        <input type="submit" value="Login">
+    </form>
+    <a href="{{ url_for('register') }}">Register</a>
+    ''')
 
 @app.route('/logout')
 def logout():
@@ -117,7 +139,18 @@ def add_expense():
         flash('Expense added successfully!', 'success')
         return redirect(url_for('view_expenses'))
 
-    return render('add_expense.html', datetime=datetime)
+    return render_template_string('''
+    <h1>Add Expense</h1>
+    <form method="POST">
+        Expense: <input type="text" name="expense" required><br>
+        Category: <input type="text" name="category" required><br>
+        Amount: <input type="number" name="amount" required><br>
+        Date: <input type="date" name="date" required><br>
+        Time: <input type="time" name="time" required><br>
+        <input type="submit" value="Add Expense">
+    </form>
+    <a href="{{ url_for('index') }}">Back</a>
+    ''', datetime=datetime)
 
 @app.route('/view_expenses')
 def view_expenses():
@@ -130,7 +163,23 @@ def view_expenses():
     total_amount = conn.execute('SELECT SUM(amount) FROM expenses WHERE user_id = ?', (user_id,)).fetchone()[0]
     conn.close()
 
-    return render_template('view_expenses.html', expenses=expenses, total_amount=total_amount or 0)
+    return render_template_string('''
+    <h1>Your Expenses</h1>
+    <table border="1">
+        <tr><th>Expense</th><th>Category</th><th>Amount</th><th>Date</th><th>Time</th></tr>
+        {% for expense in expenses %}
+        <tr>
+            <td>{{ expense['expense'] }}</td>
+            <td>{{ expense['category'] }}</td>
+            <td>{{ expense['amount'] }}</td>
+            <td>{{ expense['date'] }}</td>
+            <td>{{ expense['time'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h3>Total: {{ total_amount }}</h3>
+    <a href="{{ url_for('index') }}">Back</a>
+    ''', expenses=expenses, total_amount=total_amount or 0)
 
 @app.route('/expense_chart')
 def expense_chart():
@@ -156,7 +205,11 @@ def expense_chart():
     plt.savefig('static/expense_chart.png')
     plt.close()
 
-    return render_template('expense_chart.html', chart_url=url_for('static', filename='expense_chart.png'))
+    return render_template_string('''
+    <h1>Expense Chart</h1>
+    <img src="{{ chart_url }}" alt="Expense Chart">
+    <a href="{{ url_for('index') }}">Back</a>
+    ''', chart_url=url_for('static', filename='expense_chart.png'))
 
 if __name__ == '__main__':
     app.run(debug=True)
