@@ -48,7 +48,7 @@ create_tables()
 def index():
     if 'username' not in session:
         return redirect(url_for('login'))
-    return render_template('index.html', username=session['username'])
+    return render('index.html', username=session['username'])
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -117,7 +117,7 @@ def add_expense():
         flash('Expense added successfully!', 'success')
         return redirect(url_for('view_expenses'))
 
-    return render_template('add_expense.html', datetime=datetime)
+    return render('add_expense.html', datetime=datetime)
 
 @app.route('/view_expenses')
 def view_expenses():
